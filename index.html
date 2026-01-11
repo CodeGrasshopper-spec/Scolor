@@ -108,16 +108,19 @@ let imgLoaded = false;
 let state = { scale: 1, pointX: 0, pointY: 0 };
 const canvasSize = 600;
 
+/* 拖动速度倍率（只影响拖动，不影响缩放） */
+const DRAG_SPEED = 2.2;
+
 let initialPinchDistance = null;
 let lastScale = 1;
 let isDragging = false;
 let lastTouchX = 0;
 let lastTouchY = 0;
 
-/* ✅ 连续点击计数 */
+/* 连续点击 */
 let clickCount = 0;
 let clickTimer = null;
-const CLICK_INTERVAL = 1000; // 3 次点击最大间隔（毫秒）
+const CLICK_INTERVAL = 600;
 
 container.addEventListener('click', () => {
     clickCount++;
@@ -131,6 +134,7 @@ container.addEventListener('click', () => {
     if (clickCount === 3) {
         clearTimeout(clickTimer);
         clickCount = 0;
+        fileInput.value = '';   // ⭐关键：允许重复选择同一张图
         fileInput.click();
     }
 });
@@ -157,12 +161,15 @@ container.addEventListener('touchmove', (e) => {
     if (e.touches.length === 1 && isDragging) {
         const dx = e.touches[0].clientX - lastTouchX;
         const dy = e.touches[0].clientY - lastTouchY;
-        state.pointX += dx;
-        state.pointY += dy;
+
+        state.pointX += dx * DRAG_SPEED;
+        state.pointY += dy * DRAG_SPEED;
+
         lastTouchX = e.touches[0].clientX;
         lastTouchY = e.touches[0].clientY;
         drawImage();
-    } else if (e.touches.length === 2 && initialPinchDistance) {
+    } 
+    else if (e.touches.length === 2 && initialPinchDistance) {
         const d = getDistance(e.touches[0], e.touches[1]);
         state.scale = Math.max(0.1, Math.min(10, lastScale * d / initialPinchDistance));
         drawImage();
