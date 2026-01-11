@@ -19,10 +19,17 @@ body {
     overflow: hidden;
 }
 
-.picker-container {
+/* 外包正方形 */
+.picker-wrapper {
     position: relative;
     width: 400px;
     height: 400px;
+}
+
+/* 黑色圆形 */
+.picker-container {
+    position: absolute;
+    inset: 0;
     border-radius: 50%;
     background-color: #000;
     overflow: hidden;
@@ -35,7 +42,7 @@ body {
     height: 100%;
 }
 
-/* 十字准星 */
+/* 中心准星 */
 .crosshair {
     position: absolute;
     top: 50%;
@@ -48,16 +55,16 @@ body {
     pointer-events: none;
 }
 
-/* 左上角导入按钮 */
+/* 左上角白色按钮（正方形左上角） */
 .import-btn {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: 10px;
+    left: 10px;
     width: 22px;
     height: 22px;
     background: #fff;
     border-radius: 50%;
-    z-index: 10;
+    z-index: 20;
 }
 
 #fileInput { display: none; }
@@ -90,11 +97,14 @@ body {
 
 <body>
 
-<div class="picker-container" id="pickerContainer">
-    <canvas id="imageCanvas" width="600" height="600"></canvas>
-    <div class="crosshair"></div>
+<div class="picker-wrapper">
     <div class="import-btn" id="importBtn"></div>
-    <div id="placeholder" class="placeholder-text">0.0</div>
+
+    <div class="picker-container" id="pickerContainer">
+        <canvas id="imageCanvas" width="600" height="600"></canvas>
+        <div class="crosshair"></div>
+        <div id="placeholder" class="placeholder-text">0.0</div>
+    </div>
 </div>
 
 <input type="file" id="fileInput" accept="image/*">
@@ -121,17 +131,17 @@ let imgLoaded = false;
 let state = { scale: 1, pointX: 0, pointY: 0 };
 const canvasSize = 600;
 
-/* 🚀 拖动速度：在你原来基础上 ×2 */
+/* 拖动速度 ×2 */
 const DRAG_SPEED = 6.0;
 
-/* ---------- 导入 / 切换图片 ---------- */
+/* 导入 / 切换图片 */
 importBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     fileInput.value = '';
     fileInput.click();
 });
 
-/* ---------- 拖动 / 缩放 ---------- */
+/* 拖动 / 缩放 */
 let isDragging = false;
 let lastTouchX = 0;
 let lastTouchY = 0;
@@ -181,7 +191,7 @@ container.addEventListener('touchend', () => {
     initialPinchDistance = null;
 });
 
-/* ---------- 文件 ---------- */
+/* 文件 */
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -201,7 +211,7 @@ fileInput.addEventListener('change', (e) => {
     reader.readAsDataURL(file);
 });
 
-/* ---------- 绘制 / 取色 ---------- */
+/* 绘制 / 取色 */
 function drawImage() {
     ctx.clearRect(0, 0, canvasSize, canvasSize);
     ctx.save();
