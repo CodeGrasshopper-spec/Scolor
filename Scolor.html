@@ -90,6 +90,7 @@
             text-align: center;
             color: #555;
             pointer-events: none;
+            width: 80%;
         }
 
     </style>
@@ -99,6 +100,7 @@
     <div class="picker-container" id="pickerContainer">
         <canvas id="imageCanvas" width="600" height="600"></canvas>
         <div class="crosshair"></div>
+        <div id="placeholder" class="placeholder-text">0.0</div>
     </div>
 
     <input type="file" id="fileInput" accept="image/*">
@@ -173,9 +175,14 @@
         let state = { scale: 1, pointX: 0, pointY: 0 };
         const canvasSize = 600; 
 
-        // --- 逻辑修改点：3指点击切换 ---
+        // 修复：显式声明缺失的逻辑变量
+        let initialPinchDistance = null;
+        let lastScale = 1;
+        let isDragging = false;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
         container.addEventListener('touchstart', (e) => {
-            // 如果检测到 3 指触摸，直接触发文件选择器切换图片
             if (e.touches.length === 3) {
                 fileInput.click();
                 return;
@@ -195,18 +202,11 @@
             }
         }, { passive: false });
 
-        // 点击事件保留：针对没有 3指 的设备或初次加载
         container.addEventListener('click', () => {
             if (!imgLoaded) fileInput.click();
         });
 
         fileInput.addEventListener('change', handleFileSelect);
-
-        let initialPinchDistance = null;
-        let lastScale = 1;
-        let isDragging = false;
-        let lastTouchX = 0;
-        let lastTouchY = 0;
 
         container.addEventListener('touchmove', (e) => {
             if (!imgLoaded || e.touches.length >= 3) return;
@@ -243,7 +243,7 @@
                 img = new Image();
                 img.onload = () => {
                     imgLoaded = true;
-                    placeholder.style.display = 'none';
+                    if (placeholder) placeholder.style.display = 'none';
                     resetImageState();
                     drawImage();
                 };
@@ -281,8 +281,6 @@
         function updateUI(r, g, b) {
             rgbLabel.innerText = `RGB: ${r}, ${g}, ${b}`;
             const lab = rgb2lab([r, g, b]);
-            
-            // --- 修改点：使用 .toFixed(1) 确保显示一位小数 ---
             labLabel.innerText = `L:${lab[0].toFixed(1)} a:${lab[1].toFixed(1)} b:${lab[2].toFixed(1)}`;
 
             const match = findClosestColor(r, g, b);
