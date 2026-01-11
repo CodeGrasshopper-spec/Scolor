@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iPhone Color Picker</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; 
+        }
+
+        .picker-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background-color: #000;
+            overflow: hidden; 
+            touch-action: none; 
+        }
+
+        #imageCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: move;
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none; 
+            z-index: 10;
+        }
+
+        #fileInput {
+            display: none;
+        }
+      
+        .info-panel {
+            margin-top: 30px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .color-values {
+            font-family: "SF Mono", "Menlo", monospace;
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .color-name-display {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .color-name-en {
+            font-size: 10px;
+            color: #888;
+            font-weight: 400;
+        }
+
+        .placeholder-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #555;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="picker-container" id="pickerContainer">
+        <canvas id="imageCanvas" width="600" height="600"></canvas>
+        <div class="crosshair"></div>
+    </div>
+
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="info-panel">
+        <div class="color-values">
+            <span id="rgbVal">RGB: 0, 0, 0</span>
+            <span id="labVal">Lab: 0.0, 0.0, 0.0</span>
+        </div>
+        <div class="color-name-display">
+            <span id="colorNameCN">黑色</span>
+        </div>
+        <div class="color-name-en" id="colorNameEN">Black</div>
+    </div>
+
+    <script>
+        const colorDB = [
+            [255,250,250,"雪白色","Snow"], [248,248,255,"幽灵白","GhostWhite"], [255,255,240,"象牙白","Ivory"],
+            [255,255,255,"纯白","White"], [240,255,240,"蜜露色","Honeydew"], [245,255,250,"薄荷奶油","MintCream"],
+            [240,255,255,"蔚蓝色","Azure"], [224,255,255,"淡青色","LightCyan"], [230,230,250,"薰衣草色","Lavender"],
+            [255,240,245,"薰衣草紫红","LavenderBlush"], [255,228,225,"薄雾玫瑰","MistyRose"], [255,255,224,"浅黄色","LightYellow"],
+            [253,245,230,"老蕾丝色","OldLace"], [250,240,230,"亚麻色","Linen"], [255,245,238,"海贝色","SeaShell"],
+            [255,248,220,"玉米丝色","Cornsilk"], [255,239,213,"木瓜鞭色","PapayaWhip"], [255,235,205,"杏仁白","BlanchedAlmond"],
+            [255,228,196,"浓汤乳黄","Bisque"], [255,222,173,"纳瓦霍白","NavajoWhite"], [255,218,185,"桃色","PeachPuff"],
+            [255,228,181,"鹿皮鞋色","Moccasin"], [245,245,220,"米色","Beige"], [250,235,215,"古董白","AntiqueWhite"],
+            [250,250,210,"柠檬薄纱","LemonChiffon"], [211,211,211,"亮灰色","LightGray"],
+            [192,192,192,"银色","Silver"], [169,169,169,"深灰色","DarkGray"], [128,128,128,"灰色","Gray"],
+            [105,105,105,"暗淡灰","DimGray"], [119,136,153,"亮石板灰","LightSlateGray"], [112,128,144,"石板灰","SlateGray"],
+            [47,79,79,"深石板灰","DarkSlateGray"], [0,0,0,"纯黑","Black"], [255,160,122,"浅鲑鱼红","LightSalmon"],
+            [255,127,80,"珊瑚色","Coral"], [255,99,71,"番茄红","Tomato"], [255,69,0,"红橙色","OrangeRed"],
+            [255,165,0,"橙色","Orange"], [255,215,0,"金色","Gold"], [255,255,0,"纯黄","Yellow"],
+            [189,183,107,"暗卡其色","DarkKhaki"], [238,232,170,"苍麒麟色","PaleGoldenrod"], [240,230,140,"卡其色","Khaki"],
+            [218,165,32,"金麒麟色","Goldenrod"], [184,134,11,"暗金麒麟色","DarkGoldenrod"], [210,105,30,"巧克力色","Chocolate"], [205,133,63,"秘鲁色","Peru"],
+            [139,69,19,"马鞍棕","SaddleBrown"], [160,82,45,"赭色","Sienna"], [165,42,42,"棕色","Brown"],
+            [128,0,0,"栗色","Maroon"], [85,107,47,"暗橄榄绿","DarkOliveGreen"], [128,128,0,"橄榄色","Olive"],
+            [107,142,35,"草绿色","OliveDrab"], [154,205,50,"黄绿色","YellowGreen"], [50,205,50,"酸橙绿","LimeGreen"],
+            [0,255,0,"酸橙色","Lime"], [124,252,0,"草坪绿","LawnGreen"], [127,255,0,"查特酒绿","Chartreuse"],
+            [173,255,47,"绿黄色","GreenYellow"], [0,255,127,"春绿","SpringGreen"], [0,250,154,"中春绿","MediumSpringGreen"],
+            [144,238,144,"浅绿","LightGreen"], [152,251,152,"苍绿","PaleGreen"], [143,188,143,"海绿","DarkSeaGreen"],
+            [60,179,113,"中海绿","MediumSeaGreen"], [46,139,87,"海绿","SeaGreen"], [34,139,34,"森林绿","ForestGreen"],
+            [0,128,0,"纯绿","Green"], [0,100,0,"深绿","DarkGreen"], [102,205,170,"中碧蓝色","MediumAquamarine"],
+            [0,255,255,"青色/水色","Aqua/Cyan"], [175,238,238,"苍宝石绿","PaleTurquoise"],
+            [127,255,212,"碧蓝色","Aquamarine"], [64,224,208,"绿松石色","Turquoise"], [72,209,204,"中绿松石","MediumTurquoise"],
+            [0,206,209,"暗绿松石","DarkTurquoise"], [32,178,170,"浅海绿","LightSeaGreen"], [95,158,160,"卡力特蓝","CadetBlue"],
+            [0,139,139,"暗青色","DarkCyan"], [0,128,128,"鸭翅绿","Teal"], [176,224,230,"粉蓝","PowderBlue"],
+            [173,216,230,"浅蓝","LightBlue"], [135,206,235,"天蓝","SkyBlue"], [135,206,250,"浅天蓝","LightSkyBlue"],
+            [0,191,255,"深天蓝","DeepSkyBlue"], [30,144,255,"道奇蓝","DodgerBlue"], [100,149,237,"矢车菊蓝","CornflowerBlue"],
+            [70,130,180,"钢蓝","SteelBlue"], [65,105,225,"皇家蓝","RoyalBlue"], [0,0,255,"纯蓝","Blue"],
+            [0,0,205,"中蓝","MediumBlue"], [0,0,139,"深蓝","DarkBlue"], [0,0,128,"海军蓝","Navy"],
+            [25,25,112,"午夜蓝","MidnightBlue"], [255,192,203,"粉红","Pink"], [255,182,193,"浅粉红","LightPink"],
+            [219,112,147,"苍紫罗兰","PaleVioletRed"], [255,105,180,"热粉红","HotPink"], [199,21,133,"中紫罗兰","MediumVioletRed"],
+            [255,20,147,"深粉红","DeepPink"], [216,191,216,"蓟色","Thistle"], [221,160,221,"梅红色","Plum"],
+            [238,130,238,"紫罗兰","Violet"], [255,0,255,"洋红/品红","Magenta"], [218,112,214,"兰花紫","Orchid"],
+            [186,85,211,"中兰花紫","MediumOrchid"], [153,50,204,"暗兰花紫","DarkOrchid"], [148,0,211,"暗紫罗兰","DarkViolet"],
+            [138,43,226,"蓝紫","BlueViolet"], [160,32,240,"紫色","Purple"], [147,112,219,"中紫","MediumPurple"],
+            [123,104,238,"中板岩蓝","MediumSlateBlue"], [106,90,205,"板岩蓝","SlateBlue"], [72,61,139,"暗板岩蓝","DarkSlateBlue"],
+            [233,150,122,"暗鲑鱼红","DarkSalmon"], [250,128,114,"鲑鱼红","Salmon"], [220,20,60,"猩红","Crimson"], [255,0,0,"纯红","Red"], [178,34,34,"耐火砖红","FireBrick"]
+        ];
+
+        const container = document.getElementById('pickerContainer');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const fileInput = document.getElementById('fileInput');
+        const placeholder = document.getElementById('placeholder');
+        const rgbLabel = document.getElementById('rgbVal');
+        const labLabel = document.getElementById('labVal');
+        const cnNameLabel = document.getElementById('colorNameCN');
+        const enNameLabel = document.getElementById('colorNameEN');
+
+        let img = new Image();
+        let imgLoaded = false;
+        let state = { scale: 1, pointX: 0, pointY: 0 };
+        const canvasSize = 600; 
+
+        // --- 逻辑修改点：3指点击切换 ---
+        container.addEventListener('touchstart', (e) => {
+            // 如果检测到 3 指触摸，直接触发文件选择器切换图片
+            if (e.touches.length === 3) {
+                fileInput.click();
+                return;
+            }
+
+            if (!imgLoaded) return;
+            e.preventDefault();
+
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+                lastScale = state.scale;
+            }
+        }, { passive: false });
+
+        // 点击事件保留：针对没有 3指 的设备或初次加载
+        container.addEventListener('click', () => {
+            if (!imgLoaded) fileInput.click();
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        let initialPinchDistance = null;
+        let lastScale = 1;
+        let isDragging = false;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+
+        container.addEventListener('touchmove', (e) => {
+            if (!imgLoaded || e.touches.length >= 3) return;
+            e.preventDefault();
+
+            if (e.touches.length === 1 && isDragging) {
+                const deltaX = e.touches[0].clientX - lastTouchX;
+                const deltaY = e.touches[0].clientY - lastTouchY;
+                state.pointX += deltaX;
+                state.pointY += deltaY;
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+                drawImage();
+            } else if (e.touches.length === 2) {
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                if (initialPinchDistance > 0) {
+                    const pinchScale = currentDistance / initialPinchDistance;
+                    state.scale = Math.max(0.1, Math.min(10, lastScale * pinchScale));
+                    drawImage();
+                }
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', () => {
+            isDragging = false;
+            initialPinchDistance = null;
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                img = new Image();
+                img.onload = () => {
+                    imgLoaded = true;
+                    placeholder.style.display = 'none';
+                    resetImageState();
+                    drawImage();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetImageState() {
+            state.scale = 1;
+            state.pointX = canvasSize / 2; 
+            state.pointY = canvasSize / 2; 
+        }
+
+        function getDistance(touch1, touch2) {
+            return Math.sqrt(Math.pow(touch1.clientX - touch2.clientX, 2) + Math.pow(touch1.clientY - touch2.clientY, 2));
+        }
+
+        function drawImage() {
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+            ctx.save();
+            ctx.translate(canvasSize / 2, canvasSize / 2);
+            ctx.scale(state.scale, state.scale);
+            ctx.translate(state.pointX - canvasSize/2, state.pointY - canvasSize/2);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            ctx.restore();
+            analyzeColor();
+        }
+
+        function analyzeColor() {
+            const p = ctx.getImageData(canvasSize / 2, canvasSize / 2, 1, 1).data;
+            updateUI(p[0], p[1], p[2]);
+        }
+
+        function updateUI(r, g, b) {
+            rgbLabel.innerText = `RGB: ${r}, ${g}, ${b}`;
+            const lab = rgb2lab([r, g, b]);
+            
+            // --- 修改点：使用 .toFixed(1) 确保显示一位小数 ---
+            labLabel.innerText = `L:${lab[0].toFixed(1)} a:${lab[1].toFixed(1)} b:${lab[2].toFixed(1)}`;
+
+            const match = findClosestColor(r, g, b);
+            cnNameLabel.innerText = match[3];
+            enNameLabel.innerText = match[4];
+        }
+
+        function rgb2lab(rgb) {
+            let r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+            r = (r > 0.04045) ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+            g = (g > 0.04045) ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+            b = (b > 0.04045) ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+            let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) * 100;
+            let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) * 100;
+            let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) * 100;
+            x /= 95.047; y /= 100.000; z /= 108.883;
+            x = (x > 0.008856) ? Math.pow(x, 1/3) : (7.787 * x) + (16/116);
+            y = (y > 0.008856) ? Math.pow(y, 1/3) : (7.787 * y) + (16/116);
+            z = (z > 0.008856) ? Math.pow(z, 1/3) : (7.787 * z) + (16/116);
+            return [(116 * y) - 16, 500 * (x - y), 200 * (y - z)];
+        }
+
+        function findClosestColor(r, g, b) {
+            let minDiff = Infinity;
+            let bestMatch = colorDB[0];
+            const currentLab = rgb2lab([r, g, b]);
+            for (let i = 0; i < colorDB.length; i++) {
+                const dbColor = colorDB[i];
+                const dbLab = rgb2lab([dbColor[0], dbColor[1], dbColor[2]]);
+                const diff = Math.sqrt(Math.pow(currentLab[0]-dbLab[0],2) + Math.pow(currentLab[1]-dbLab[1],2) + Math.pow(currentLab[2]-dbLab[2],2));
+                if (diff < minDiff) { minDiff = diff; bestMatch = dbColor; }
+            }
+            return bestMatch;
+        }
+    </script>
+</body>
+</html>
