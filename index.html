@@ -19,17 +19,20 @@ body {
     overflow: hidden;
 }
 
-/* 外包正方形 */
+/* 外包正方形（稍微大一点，给按钮留空间） */
 .picker-wrapper {
     position: relative;
-    width: 400px;
-    height: 400px;
+    width: 420px;
+    height: 420px;
 }
 
-/* 黑色圆形 */
+/* 黑色圆形（缩小） */
 .picker-container {
     position: absolute;
-    inset: 0;
+    left: 20px;
+    top: 40px;
+    width: 380px;
+    height: 380px;
     border-radius: 50%;
     background-color: #000;
     overflow: hidden;
@@ -55,15 +58,16 @@ body {
     pointer-events: none;
 }
 
-/* 左上角白色按钮（正方形左上角） */
+/* 正上方灰色大圆按钮 */
 .import-btn {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 22px;
-    height: 22px;
-    background: #fff;
+    top: 0;
+    left: 50%;
+    width: 34px;
+    height: 34px;
+    background: #888;
     border-radius: 50%;
+    transform: translateX(-50%);
     z-index: 20;
 }
 
@@ -134,7 +138,7 @@ const canvasSize = 600;
 /* 拖动速度 ×2 */
 const DRAG_SPEED = 6.0;
 
-/* 导入 / 切换图片 */
+/* 导入图片 */
 importBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     fileInput.value = '';
