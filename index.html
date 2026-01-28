@@ -19,14 +19,12 @@ body {
     overflow: hidden;
 }
 
-/* 外包正方形 */
 .picker-wrapper {
     position: relative;
     width: 420px;
     height: 420px;
 }
 
-/* 黑色圆形 */
 .picker-container {
     position: absolute;
     left: 20px;
@@ -45,7 +43,6 @@ body {
     height: 100%;
 }
 
-/* 中心准星 */
 .crosshair {
     position: absolute;
     top: 50%;
@@ -58,7 +55,6 @@ body {
     pointer-events: none;
 }
 
-/* 正上方灰色大圆按钮 */
 .import-btn {
     position: absolute;
     top: 0;
@@ -74,19 +70,23 @@ body {
 #fileInput { display: none; }
 
 .info-panel {
-    margin-top: 30px;
+    margin-top: 25px;
     text-align: center;
-    width: 95%; /* 稍微加宽一点以容纳更多数值 */
-    max-width: 450px;
+    width: 100%;
 }
 
 .color-values {
     font-family: "SF Mono", monospace;
-    font-size: 13px; /* 稍微缩小字体以免折行 */
-    color: #aaa;
+    font-size: 14px;
+    color: #888;
     display: flex;
-    justify-content: space-around;
-    gap: 10px;
+    flex-direction: column;
+    gap: 10px; /* 两行之间的间距 */
+}
+
+#hslVal {
+    color: #ddd; /* 让 HSL 稍微亮一点，方便区分 */
+    letter-spacing: 0.5px;
 }
 
 .placeholder-text {
@@ -104,7 +104,6 @@ body {
 
 <div class="picker-wrapper">
     <div class="import-btn" id="importBtn"></div>
-
     <div class="picker-container" id="pickerContainer">
         <canvas id="imageCanvas" width="600" height="600"></canvas>
         <div class="crosshair"></div>
@@ -116,9 +115,12 @@ body {
 
 <div class="info-panel">
     <div class="color-values">
-        <span id="rgbVal">RGB: 0, 0, 0</span>
-        <span id="hslVal">HSL: 0, 0%, 0%</span>
-        <span id="labVal">Lab: 0.0, 0.0, 0.0</span>
+        <div>
+            <span id="rgbVal">RGB: 0, 0, 0</span>
+            <span style="margin: 0 12px; opacity: 0.3;">|</span>
+            <span id="labVal">Lab: 0.0, 0.0, 0.0</span>
+        </div>
+        <div id="hslVal">HSL: 0, 0%, 0%</div>
     </div>
 </div>
 
@@ -130,14 +132,13 @@ const fileInput = document.getElementById('fileInput');
 const importBtn = document.getElementById('importBtn');
 const placeholder = document.getElementById('placeholder');
 const rgbLabel = document.getElementById('rgbVal');
-const hslLabel = document.getElementById('hslVal'); // 新增
+const hslLabel = document.getElementById('hslVal');
 const labLabel = document.getElementById('labVal');
 
 let img = new Image();
 let imgLoaded = false;
 let state = { scale: 1, pointX: 0, pointY: 0 };
 const canvasSize = 600;
-
 const DRAG_SPEED = 2.0;
 
 importBtn.addEventListener('click', (e) => {
@@ -225,29 +226,19 @@ function analyzeColor() {
 }
 
 function updateUI(r, g, b) {
-    // 更新 RGB
     rgbLabel.innerText = `RGB: ${r}, ${g}, ${b}`;
-    
-    // 更新 HSL (新增)
     const hsl = rgb2hsl(r, g, b);
-    hslLabel.innerText = `HSL: ${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%`;
-    
-    // 更新 Lab
+    hslLabel.innerText = `HSL: ${hsl[0]}°, ${hsl[1]}%, ${hsl[2]}%`;
     const lab = rgb2lab([r, g, b]);
     labLabel.innerText = `L:${lab[0].toFixed(1)} a:${lab[1].toFixed(1)} b:${lab[2].toFixed(1)}`;
 }
 
-/**
- * RGB 转 HSL 转换函数 (新增)
- */
 function rgb2hsl(r, g, b) {
     r /= 255; g /= 255; b /= 255;
     const max = Math.max(r, g, b), min = Math.min(r, g, b);
     let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-        h = s = 0; // 灰色
-    } else {
+    if (max === min) { h = s = 0; } 
+    else {
         const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
         switch (max) {
@@ -257,12 +248,7 @@ function rgb2hsl(r, g, b) {
         }
         h /= 6;
     }
-
-    return [
-        Math.round(h * 360),
-        Math.round(s * 100),
-        Math.round(l * 100)
-    ];
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
 }
 
 function rgb2lab(rgb) {
@@ -282,6 +268,5 @@ function getDistance(a, b) {
     return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
 </script>
-
 </body>
 </html>
