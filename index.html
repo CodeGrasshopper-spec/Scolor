@@ -78,15 +78,16 @@ body {
 .color-values {
     font-family: "SF Mono", monospace;
     font-size: 14px;
-    color: #888;
+    /* 统一设置最亮颜色 */
+    color: #ffffff; 
     display: flex;
     flex-direction: column;
-    gap: 10px; /* 两行之间的间距 */
+    gap: 12px;
 }
 
-#hslVal {
-    color: #ddd; /* 让 HSL 稍微亮一点，方便区分 */
-    letter-spacing: 0.5px;
+/* 确保所有子元素颜色强制一致 */
+.color-values span, #hslVal {
+    color: #ffffff;
 }
 
 .placeholder-text {
@@ -117,7 +118,7 @@ body {
     <div class="color-values">
         <div>
             <span id="rgbVal">RGB: 0, 0, 0</span>
-            <span style="margin: 0 12px; opacity: 0.3;">|</span>
+            <span style="margin: 0 12px; color: #555;">|</span>
             <span id="labVal">Lab: 0.0, 0.0, 0.0</span>
         </div>
         <div id="hslVal">HSL: 0, 0%, 0%</div>
@@ -230,7 +231,7 @@ function updateUI(r, g, b) {
     const hsl = rgb2hsl(r, g, b);
     hslLabel.innerText = `HSL: ${hsl[0]}°, ${hsl[1]}%, ${hsl[2]}%`;
     const lab = rgb2lab([r, g, b]);
-    labLabel.innerText = `L:${lab[0].toFixed(1)} a:${lab[1].toFixed(1)} b:${lab[2].toFixed(1)}`;
+    labLabel.innerText = `Lab: ${lab[0].toFixed(1)}, ${lab[1].toFixed(1)}, ${lab[2].toFixed(1)}`;
 }
 
 function rgb2hsl(r, g, b) {
